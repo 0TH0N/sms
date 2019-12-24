@@ -5,13 +5,20 @@ function parseSMS(string $sms): array
     // Extract sum
     $sum = null;
     $found = preg_match_all(
-        '/^(\D*)(\d{1,6}[.,]\d{2})(\D*)$/mu',
+        '/(\d{1,6}[.,]\d{2})/mu',
         $sms,
         $sum
     );
     if (!$found) {
         $found = preg_match_all(
-            '/^(\D*)(\d{1,6})(\s?[рr].*)$/mui',
+            '/\D(\d{1,6})\s?[рr]/mui',
+            $sms,
+            $sum
+        );
+    }
+    if (!$found) {
+        $found = preg_match_all(
+            '/^(\d{1,6})\s?[рr]/mui',
             $sms,
             $sum
         );
@@ -24,11 +31,17 @@ function parseSMS(string $sms): array
     }
 
     // cut found number from sms
-    $sms = str_replace($sum[2][0], '', $sms);
+    $sms = str_replace($sum[1][0], '', $sms);
 
     // Extract confirmation code
     $code = null;
-    $found = preg_match_all('/^(\D*)(\d{4,6})(\D*)$/m', $sms, $code);
+    $found = preg_match_all('/(\D)(\d{4,6})(\D)/m', $sms, $code);
+    if (!$found) {
+        $found = preg_match_all('/^()(\d{4,6})(\D)/m', $sms, $code);
+    }
+    if (!$found) {
+        $found = preg_match_all('/(\D)(\d{4,6})$/m', $sms, $code);
+    }
     if (!$found) {
         throw new Exception('verification code was not found');
     }
@@ -36,8 +49,6 @@ function parseSMS(string $sms): array
         throw new Exception("can't clearly distinguish the confirmation code");
     }
 
-    // cut found number from sms
-    $sms = str_replace($code[2][0], '', $sms);
 
     // Extract wallet
     $wallet = null;
@@ -51,7 +62,7 @@ function parseSMS(string $sms): array
 
     $answer = [
         'code'   => $code[2][0],
-        'sum'    => $sum[2][0],
+        'sum'    => $sum[1][0],
         'wallet' => $wallet[0][0]
     ];
 
